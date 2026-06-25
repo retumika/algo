@@ -124,7 +124,9 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Neural-Network.cpp" />
-    <ClCompile Include="巡回セールスマン.cpp" />
+    <ClCompile Include="巡回セールスマン.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="強化学習.cpp" />
     <ClCompile Include="最急降下法.cpp" />
   </ItemGroup>
