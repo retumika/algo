@@ -1,10 +1,8 @@
 ﻿#define _CRT_SECURE_NO_WARNINGS
 #include <stdio.h>
 
-// ==========================================
-// 1. TD学習（状態価値Vの更新）用の関数
-// ==========================================
-void run_td_learning() {
+// staticを付けることで、このファイル内だけで使う関数にします（重複エラー対策）
+static void run_td_learning() {
     double alpha, gamma;
     double V[7], initial_S[6];
     int path_len;
@@ -28,28 +26,22 @@ void run_td_learning() {
     scanf("%d", &path_len);
 
     printf("移動の順番をスペース区切りで入力してください (G1=0, S1=1, ..., S5=5, G2=6)\n");
-    printf(" (例: S3からS4なら「3 4」、問題2の経路なら「3 2 1 2 3 4 5 6」): ");
     for (int i = 0; i < path_len; i++) {
         scanf("%d", &path[i]);
     }
 
     printf("\nこの移動を何回繰り返しますか？\n");
-    printf(" (例: 1回だけなら「1」、無限回(収束)なら「1000」など): ");
     scanf("%d", &repeats);
 
-    // 初期化
-    V[0] = 0.0;     // G1
-    V[6] = 100.0;   // G2 (+100点)
+    V[0] = 0.0;
+    V[6] = 100.0;
     for (int i = 1; i <= 5; i++) V[i] = initial_S[i];
 
-    // TD学習の実行
     for (int r = 0; r < repeats; r++) {
         for (int i = 0; i < path_len - 1; i++) {
             int s = path[i];
             int s_next = path[i + 1];
-            double reward = 0.0; // 移動中の報酬は0（G2の価値100を直接参照する）
-
-            // TD更新式: V(S) = V(S) + α * (R + γ * V(S') - V(S))
+            double reward = 0.0;
             V[s] = V[s] + alpha * (reward + gamma * V[s_next] - V[s]);
         }
     }
@@ -67,13 +59,9 @@ void run_td_learning() {
     printf("======================================\n");
 }
 
-
-// ==========================================
-// 2. Q学習（行動価値Qの更新）用の関数
-// ==========================================
-void run_q_learning() {
+static void run_q_learning() {
     double alpha, gamma;
-    double Q[7][2]; // [状態0〜6][行動0:左, 1:右]
+    double Q[7][2];
 
     printf("\n【2. Q学習モード】\n");
     printf("学習率αを入力してください (例: 0.1): ");
@@ -82,8 +70,8 @@ void run_q_learning() {
     scanf("%lf", &gamma);
 
     printf("初期の行動価値(Q値)を入力してください:\n");
-    Q[0][0] = 0.0; Q[0][1] = 0.0; // G1
-    Q[6][0] = 0.0; Q[6][1] = 0.0; // G2
+    Q[0][0] = 0.0; Q[0][1] = 0.0;
+    Q[6][0] = 0.0; Q[6][1] = 0.0;
     for (int i = 1; i <= 5; i++) {
         printf("  S%d [左]へ行く行動: ", i);
         scanf("%lf", &Q[i][0]);
@@ -99,23 +87,19 @@ void run_q_learning() {
     scanf("%d", &action_type);
 
     int action = action_type;
-    // グリーディ方策（最大Q値の行動を選ぶ）
     if (action_type == 2) {
         action = (Q[target_state][0] > Q[target_state][1]) ? 0 : 1;
         printf(" -> ※現在のQ値に基づき「%s」が選択されました。\n", (action == 0) ? "左" : "右");
     }
 
-    // 移動先の決定と報酬
     int next_state = (action == 0) ? target_state - 1 : target_state + 1;
     double reward = (action == 1 && next_state == 6) ? 100.0 : 0.0;
 
-    // 次の状態の最大Q値の取得
     double max_q_next = 0.0;
     if (next_state != 0 && next_state != 6) {
         max_q_next = (Q[next_state][0] > Q[next_state][1]) ? Q[next_state][0] : Q[next_state][1];
     }
 
-    // Q値の更新
     double current_q = Q[target_state][action];
     double new_q = current_q + alpha * (reward + gamma * max_q_next - current_q);
 
@@ -124,11 +108,7 @@ void run_q_learning() {
     printf("======================================\n");
 }
 
-
-// ==========================================
-// 3. εグリーディ方策の確率計算用の関数
-// ==========================================
-void run_epsilon_greedy() {
+static void run_epsilon_greedy() {
     double epsilon;
     double V[7];
 
@@ -137,8 +117,7 @@ void run_epsilon_greedy() {
     scanf("%lf", &epsilon);
 
     printf("現在の状態価値を入力してください (S1〜S5):\n");
-    V[0] = 0.0;     // G1
-    V[6] = 100.0;   // G2
+    V[0] = 0.0; V[6] = 100.0;
     for (int i = 1; i <= 5; i++) {
         printf("  S%d: ", i);
         scanf("%lf", &V[i]);
@@ -150,24 +129,19 @@ void run_epsilon_greedy() {
     printf("移動先の状態を入力してください (例: S1なら「1」): ");
     scanf("%d", &target_state);
 
-    // 左右の価値を比較
     double v_left = V[current_state - 1];
     double v_right = V[current_state + 1];
 
-    // 目的の移動先が左か右か判定
     int is_target_left = (target_state < current_state);
     double probability = 0.0;
 
     if (v_left > v_right) {
-        // 左の価値が高い場合
         probability = is_target_left ? (1.0 - epsilon / 2.0) : (epsilon / 2.0);
     }
     else if (v_left < v_right) {
-        // 右の価値が高い場合
         probability = is_target_left ? (epsilon / 2.0) : (1.0 - epsilon / 2.0);
     }
     else {
-        // 価値が同じ場合はランダム(50%)
         probability = 0.5;
     }
 
@@ -176,11 +150,8 @@ void run_epsilon_greedy() {
     printf("======================================\n");
 }
 
-
-// ==========================================
-// メイン関数（メニュー画面）
-// ==========================================
-int main() {
+// main.cpp から呼び出される全体の窓口
+extern "C" void run_reinforcement_learning() {
     int mode;
 
     while (1) {
@@ -212,6 +183,4 @@ int main() {
             printf("正しい番号を入力してください。\n");
         }
     }
-
-    return 0;
 }

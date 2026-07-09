@@ -15,7 +15,13 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="巡回セールスマン.cpp">
+    <ClCompile Include="main.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="genetic-algorithm.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="Neural-Network.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="強化学習.cpp">
@@ -24,7 +30,7 @@
     <ClCompile Include="最急降下法.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="Neural-Network.cpp">
+    <ClCompile Include="巡回セールスマン.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
   </ItemGroup>
