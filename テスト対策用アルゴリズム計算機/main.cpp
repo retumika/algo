@@ -55,7 +55,7 @@ int main() {
                 run_gradient_descent();
                 break;
             default:
-                std::cout << "正しい番号（0〜5）を入力してください。\n";
+                std::cout << "正しい番号（0to5）を入力してください。\n";
                 break;
         }
         std::cout << "----------------------------------------\n";

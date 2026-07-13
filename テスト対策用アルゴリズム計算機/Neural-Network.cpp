@@ -13,7 +13,7 @@ static void run_feedforward() {
     printf("入力の数（重みの数）を入力してください (例: 2): ");
     if (scanf("%d", &n) != 1) return;
 
-    printf("重み w1〜w%d をスペース区切りで入力してください:\n", n);
+    printf("重み w1tow%d をスペース区切りで入力してください:\n", n);
     for (int i = 0; i < n; i++) {
         scanf("%lf", &w[i]);
     }
@@ -21,7 +21,7 @@ static void run_feedforward() {
     printf("閾値 θ を入力してください: ");
     scanf("%lf", &theta);
 
-    printf("入力 x1〜x%d をスペース区切りで入力してください:\n", n);
+    printf("入力 x1tox%d をスペース区切りで入力してください:\n", n);
     for (int i = 0; i < n; i++) {
         scanf("%lf", &x[i]);
     }
@@ -55,7 +55,7 @@ static void run_inverse_sigmoid() {
     printf("入力の数を入力してください (例: 3): ");
     if (scanf("%d", &n) != 1) return;
 
-    printf("重み w1〜w%d をスペース区切りで入力してください:\n", n);
+    printf("重み w1tow%d をスペース区切りで入力してください:\n", n);
     for (int i = 0; i < n; i++) {
         scanf("%lf", &w[i]);
     }
@@ -99,7 +99,7 @@ static void run_learning() {
     printf("入力の数を入力してください (例: 2): ");
     if (scanf("%d", &n) != 1) return;
 
-    printf("初期の重み w1〜w%d をスペース区切りで入力してください:\n", n);
+    printf("初期の重み w1tow%d をスペース区切りで入力してください:\n", n);
     for (int i = 0; i < n; i++) {
         scanf("%lf", &w[i]);
     }

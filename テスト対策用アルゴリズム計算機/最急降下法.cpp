@@ -1,6 +1,6 @@
 #define _CRT_SECURE_NO_WARNINGS
 #include <stdio.h>
-
+//Še©‚Å”÷•ª‚µ‚½‚à‚Ì‚É’u‚«Š·‚¦‚éB
 static double get_gradient(double x) {
     return 6.0 * x - 6.0;
 }

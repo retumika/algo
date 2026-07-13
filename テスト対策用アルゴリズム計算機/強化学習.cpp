@@ -15,7 +15,7 @@ static void run_td_learning() {
     printf("割引率γを入力してください (例: 0.9 または 1.0): ");
     scanf("%lf", &gamma);
 
-    printf("初期状態の価値を入力してください (S1〜S5):\n");
+    printf("初期状態の価値を入力してください (S1toS5):\n");
     for (int i = 1; i <= 5; i++) {
         printf("  S%d: ", i);
         scanf("%lf", &initial_S[i]);
@@ -80,7 +80,7 @@ static void run_q_learning() {
     }
 
     int target_state, action_type;
-    printf("\n更新を行いたい現在の状態を入力してください (1〜5): ");
+    printf("\n更新を行いたい現在の状態を入力してください (1to5): ");
     scanf("%d", &target_state);
 
     printf("どのように行動しますか？ (0: 左へ行く, 1: 右へ行く, 2: グリーディ方策に従う): ");
@@ -116,7 +116,7 @@ static void run_epsilon_greedy() {
     printf("ε(イプシロン)の値を入力してください (例: 0.1): ");
     scanf("%lf", &epsilon);
 
-    printf("現在の状態価値を入力してください (S1〜S5):\n");
+    printf("現在の状態価値を入力してください (S1toS5):\n");
     V[0] = 0.0; V[6] = 100.0;
     for (int i = 1; i <= 5; i++) {
         printf("  S%d: ", i);
