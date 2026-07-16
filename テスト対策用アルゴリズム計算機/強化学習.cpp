@@ -1,31 +1,41 @@
 ﻿#define _CRT_SECURE_NO_WARNINGS
 #include <stdio.h>
+#include <stdlib.h>
 
-// staticを付けることで、このファイル内だけで使う関数にします（重複エラー対策）
+#define MAX_STATES 100 // 任意に対応できる最大状態数（必要に応じて増やしてください）
+
+// staticを付けることで、このファイル内だけで使う関数にします
 static void run_td_learning() {
     double alpha, gamma;
-    double V[7], initial_S[6];
+    int N;
+    double V[MAX_STATES + 2];
     int path_len;
-    int path[100];
+    int path[1000];
     int repeats;
 
     printf("\n【1. TD学習モード】\n");
+    printf("通常状態の数 N を入力してください (S1toSN): ");
+    if (scanf("%d", &N) != 1 || N <= 0 || N > MAX_STATES) {
+        printf("無効な入力です。\n");
+        return;
+    }
+
     printf("学習率αを入力してください (例: 0.1): ");
     scanf("%lf", &alpha);
     printf("割引率γを入力してください (例: 0.9 または 1.0): ");
     scanf("%lf", &gamma);
 
-    printf("初期状態の価値を入力してください (S1toS5):\n");
-    for (int i = 1; i <= 5; i++) {
+    printf("初期状態の価値を入力してください (S1 to S%d):\n", N);
+    for (int i = 1; i <= N; i++) {
         printf("  S%d: ", i);
-        scanf("%lf", &initial_S[i]);
+        scanf("%lf", &V[i]);
     }
 
     printf("\n移動する状態の「数」を入力してください。\n");
-    printf(" (例: S3からS4への1回移動なら「2」、S3->S2->S1...G2の移動なら「8」): ");
+    printf(" (例: S3からS4への1回移動なら「2」): ");
     scanf("%d", &path_len);
 
-    printf("移動の順番をスペース区切りで入力してください (G1=0, S1=1, ..., S5=5, G2=6)\n");
+    printf("移動の順番をスペース区切りで入力してください (G1=0, S1=1, ..., S%d=%d, G2=%d)\n", N, N, N + 1);
     for (int i = 0; i < path_len; i++) {
         scanf("%d", &path[i]);
     }
@@ -33,9 +43,9 @@ static void run_td_learning() {
     printf("\nこの移動を何回繰り返しますか？\n");
     scanf("%d", &repeats);
 
+    // 両端のゴールの価値を設定
     V[0] = 0.0;
-    V[6] = 100.0;
-    for (int i = 1; i <= 5; i++) V[i] = initial_S[i];
+    V[N + 1] = 100.0;
 
     for (int r = 0; r < repeats; r++) {
         for (int i = 0; i < path_len - 1; i++) {
@@ -54,25 +64,38 @@ static void run_td_learning() {
         printf("無限回繰り返した後の 状態 S1 の価値: %.4f\n", V[1]);
     }
     else {
-        printf("移動後の S1〜S5 の価値: %.4f %.4f %.4f %.4f %.4f\n", V[1], V[2], V[3], V[4], V[5]);
+        printf("移動後の S1〜S%d の価値: ", N);
+        for (int i = 1; i <= N; i++) {
+            printf("%.4f%s", V[i], (i == N) ? "" : " ");
+        }
+        printf("\n");
     }
     printf("======================================\n");
 }
 
 static void run_q_learning() {
     double alpha, gamma;
-    double Q[7][2];
+    int N;
+    double Q[MAX_STATES + 2][2];
 
     printf("\n【2. Q学習モード】\n");
+    printf("通常状態の数 N を入力してください (S1toSN): ");
+    if (scanf("%d", &N) != 1 || N <= 0 || N > MAX_STATES) {
+        printf("無効な入力です。\n");
+        return;
+    }
+
     printf("学習率αを入力してください (例: 0.1): ");
     scanf("%lf", &alpha);
     printf("割引率γを入力してください (例: 0.9): ");
     scanf("%lf", &gamma);
 
     printf("初期の行動価値(Q値)を入力してください:\n");
+    // 両端ゴールのQ値は0
     Q[0][0] = 0.0; Q[0][1] = 0.0;
-    Q[6][0] = 0.0; Q[6][1] = 0.0;
-    for (int i = 1; i <= 5; i++) {
+    Q[N + 1][0] = 0.0; Q[N + 1][1] = 0.0;
+
+    for (int i = 1; i <= N; i++) {
         printf("  S%d [左]へ行く行動: ", i);
         scanf("%lf", &Q[i][0]);
         printf("  S%d [右]へ行く行動: ", i);
@@ -80,7 +103,7 @@ static void run_q_learning() {
     }
 
     int target_state, action_type;
-    printf("\n更新を行いたい現在の状態を入力してください (1to5): ");
+    printf("\n更新を行いたい現在の状態を入力してください (1 to %d): ", N);
     scanf("%d", &target_state);
 
     printf("どのように行動しますか？ (0: 左へ行く, 1: 右へ行く, 2: グリーディ方策に従う): ");
@@ -93,10 +116,11 @@ static void run_q_learning() {
     }
 
     int next_state = (action == 0) ? target_state - 1 : target_state + 1;
-    double reward = (action == 1 && next_state == 6) ? 100.0 : 0.0;
+    // 右端のゴール（N + 1）に到達したときだけ報酬 +100
+    double reward = (action == 1 && next_state == N + 1) ? 100.0 : 0.0;
 
     double max_q_next = 0.0;
-    if (next_state != 0 && next_state != 6) {
+    if (next_state != 0 && next_state != N + 1) {
         max_q_next = (Q[next_state][0] > Q[next_state][1]) ? Q[next_state][0] : Q[next_state][1];
     }
 
@@ -110,21 +134,29 @@ static void run_q_learning() {
 
 static void run_epsilon_greedy() {
     double epsilon;
-    double V[7];
+    int N;
+    double V[MAX_STATES + 2];
 
     printf("\n【3. εグリーディ方策 確率計算モード】\n");
+    printf("通常状態の数 N を入力してください (S1toSN): ");
+    if (scanf("%d", &N) != 1 || N <= 0 || N > MAX_STATES) {
+        printf("無効な入力です。\n");
+        return;
+    }
+
     printf("ε(イプシロン)の値を入力してください (例: 0.1): ");
     scanf("%lf", &epsilon);
 
-    printf("現在の状態価値を入力してください (S1toS5):\n");
-    V[0] = 0.0; V[6] = 100.0;
-    for (int i = 1; i <= 5; i++) {
+    printf("現在の状態価値を入力してください (S1 to S%d):\n", N);
+    V[0] = 0.0;
+    V[N + 1] = 100.0;
+    for (int i = 1; i <= N; i++) {
         printf("  S%d: ", i);
         scanf("%lf", &V[i]);
     }
 
     int current_state, target_state;
-    printf("\nエージェントが現在いる状態を入力してください (1〜5): ");
+    printf("\nエージェントが現在いる状態を入力してください (1〜%d): ", N);
     scanf("%d", &current_state);
     printf("移動先の状態を入力してください (例: S1なら「1」): ");
     scanf("%d", &target_state);
