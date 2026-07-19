@@ -2,9 +2,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define MAX_STATES 100 // 任意に対応できる最大状態数（必要に応じて増やしてください）
+#define MAX_STATES 100 // 任意に対応できる最大状態数
 
-// staticを付けることで、このファイル内だけで使う関数にします
 static void run_td_learning() {
     double alpha, gamma;
     int N;
@@ -22,7 +21,7 @@ static void run_td_learning() {
 
     printf("学習率αを入力してください (例: 0.1): ");
     scanf("%lf", &alpha);
-    printf("割引率γを入力してください (例: 0.9 または 1.0): ");
+    printf("割引率γを入力してください (例: 1.0で割引率なし): ");
     scanf("%lf", &gamma);
 
     printf("初期状態の価値を入力してください (S1 to S%d):\n", N);
@@ -43,33 +42,24 @@ static void run_td_learning() {
     printf("\nこの移動を何回繰り返しますか？\n");
     scanf("%d", &repeats);
 
-    // 両端のゴールの価値を設定
     V[0] = 0.0;
-    V[N + 1] = 100.0;
+    V[N + 1] = 0.0;
 
     for (int r = 0; r < repeats; r++) {
         for (int i = 0; i < path_len - 1; i++) {
             int s = path[i];
             int s_next = path[i + 1];
-            double reward = 0.0;
+            double reward = (s_next == N + 1) ? 100.0 : 0.0;
             V[s] = V[s] + alpha * (reward + gamma * V[s_next] - V[s]);
         }
     }
 
     printf("\n================ 答え ================\n");
-    if (path_len == 2 && repeats == 1) {
-        printf("移動後の 状態 S%d の価値: %.4f\n", path[0], V[path[0]]);
+    printf("移動後の S1toS%d の価値: ", N);
+    for (int i = 1; i <= N; i++) {
+        printf("%.4f%s", V[i], (i == N) ? "" : " ");
     }
-    else if (repeats > 1) {
-        printf("無限回繰り返した後の 状態 S1 の価値: %.4f\n", V[1]);
-    }
-    else {
-        printf("移動後の S1〜S%d の価値: ", N);
-        for (int i = 1; i <= N; i++) {
-            printf("%.4f%s", V[i], (i == N) ? "" : " ");
-        }
-        printf("\n");
-    }
+    printf("\n");
     printf("======================================\n");
 }
 
@@ -91,7 +81,6 @@ static void run_q_learning() {
     scanf("%lf", &gamma);
 
     printf("初期の行動価値(Q値)を入力してください:\n");
-    // 両端ゴールのQ値は0
     Q[0][0] = 0.0; Q[0][1] = 0.0;
     Q[N + 1][0] = 0.0; Q[N + 1][1] = 0.0;
 
@@ -102,34 +91,82 @@ static void run_q_learning() {
         scanf("%lf", &Q[i][1]);
     }
 
-    int target_state, action_type;
-    printf("\n更新を行いたい現在の状態を入力してください (1 to %d): ", N);
-    scanf("%d", &target_state);
+    int q_mode;
+    printf("\nQ学習の種類を選んでください:\n");
+    printf("  1: 特定の状態・特定の行動を1ステップだけ更新する\n");
+    printf("  2: ゴールに到達するまでグリーディ方策で自動移動・更新する\n");
+    printf("選択: ");
+    scanf("%d", &q_mode);
 
-    printf("どのように行動しますか？ (0: 左へ行く, 1: 右へ行く, 2: グリーディ方策に従う): ");
-    scanf("%d", &action_type);
+    switch (q_mode) {
+    case 1: {
+        int target_state, action_type;
+        printf("\n更新を行いたい現在の状態を入力してください (1 to %d): ", N);
+        scanf("%d", &target_state);
 
-    int action = action_type;
-    if (action_type == 2) {
-        action = (Q[target_state][0] > Q[target_state][1]) ? 0 : 1;
-        printf(" -> ※現在のQ値に基づき「%s」が選択されました。\n", (action == 0) ? "左" : "右");
+        printf("どのように行動しますか？ (0: 左へ行く, 1: 右へ行く, 2: グリーディ方策に従う): ");
+        scanf("%d", &action_type);
+
+        int action = action_type;
+        if (action_type == 2) {
+            action = (Q[target_state][0] > Q[target_state][1]) ? 0 : 1;
+            printf(" -> ※現在のQ値に基づき「%s」が選択されました。\n", (action == 0) ? "左" : "右");
+        }
+
+        int next_state = (action == 0) ? target_state - 1 : target_state + 1;
+        double reward = (action == 1 && next_state == N + 1) ? 100.0 : 0.0;
+
+        double max_q_next = 0.0;
+        if (next_state != 0 && next_state != N + 1) {
+            max_q_next = (Q[next_state][0] > Q[next_state][1]) ? Q[next_state][0] : Q[next_state][1];
+        }
+
+        double current_q = Q[target_state][action];
+        Q[target_state][action] = current_q + alpha * (reward + gamma * max_q_next - current_q);
+
+        printf("\n================ 答え ================\n");
+        printf("ピンポイントで変化した後の値: %.4f\n", Q[target_state][action]);
+        printf("--------------------------------------\n");
+        break;
+    }
+    case 2: {
+        int current_state;
+        printf("\nスタートする状態を入力してください (例: 3): ");
+        scanf("%d", &current_state);
+
+        while (current_state != 0 && current_state != N + 1) {
+            int action = (Q[current_state][0] > Q[current_state][1]) ? 0 : 1;
+            int next_state = (action == 0) ? current_state - 1 : current_state + 1;
+            double reward = (action == 1 && next_state == N + 1) ? 100.0 : 0.0;
+
+            double max_q_next = 0.0;
+            if (next_state != 0 && next_state != N + 1) {
+                max_q_next = (Q[next_state][0] > Q[next_state][1]) ? Q[next_state][0] : Q[next_state][1];
+            }
+
+            double current_q = Q[current_state][action];
+            Q[current_state][action] = current_q + alpha * (reward + gamma * max_q_next - current_q);
+
+            current_state = next_state;
+        }
+        printf("\n================ 答え ================\n");
+        break;
+    }
+    default:
+        printf("正しい番号を入力してください。\n");
+        break;
     }
 
-    int next_state = (action == 0) ? target_state - 1 : target_state + 1;
-    // 右端のゴール（N + 1）に到達したときだけ報酬 +100
-    double reward = (action == 1 && next_state == N + 1) ? 100.0 : 0.0;
-
-    double max_q_next = 0.0;
-    if (next_state != 0 && next_state != N + 1) {
-        max_q_next = (Q[next_state][0] > Q[next_state][1]) ? Q[next_state][0] : Q[next_state][1];
+    printf("更新後のすべての状態のQ値一覧:\n");
+    printf("（コピー用形式: 左S1toSN、次に右S1toSNの順に半角スペース区切り）\n\n");
+    for (int i = 1; i <= N; i++) {
+        printf("%.4f ", Q[i][0]);
     }
-
-    double current_q = Q[target_state][action];
-    double new_q = current_q + alpha * (reward + gamma * max_q_next - current_q);
-
-    printf("\n================ 答え ================\n");
-    printf("変化した後の値: %.4f\n", new_q);
-    printf("======================================\n");
+    for (int i = 1; i <= N; i++) {
+        printf("%.4f", Q[i][1]);
+        if (i < N) printf(" ");
+    }
+    printf("\n======================================\n");
 }
 
 static void run_epsilon_greedy() {
@@ -156,7 +193,7 @@ static void run_epsilon_greedy() {
     }
 
     int current_state, target_state;
-    printf("\nエージェントが現在いる状態を入力してください (1〜%d): ", N);
+    printf("\nエージェントが現在いる状態を入力してください (1 to %d): ", N);
     scanf("%d", &current_state);
     printf("移動先の状態を入力してください (例: S1なら「1」): ");
     scanf("%d", &target_state);
@@ -182,37 +219,113 @@ static void run_epsilon_greedy() {
     printf("======================================\n");
 }
 
-// main.cpp から呼び出される全体の窓口
+static void run_greedy_td_simulation() {
+    double alpha, gamma;
+    int N;
+    double V[MAX_STATES + 2];
+
+    printf("\n【4. TD学習 自動グリーディ移動シミュレーション】\n");
+    printf("通常状態の数 N を入力してください (S1toSN): ");
+    if (scanf("%d", &N) != 1 || N <= 0 || N > MAX_STATES) return;
+
+    printf("学習率αを入力してください (例: 0.1): ");
+    scanf("%lf", &alpha);
+    printf("割引率γを入力してください (例: 0.9): ");
+    scanf("%lf", &gamma);
+
+    printf("現在の状態価値を入力してください (S1 to S%d):\n", N);
+    for (int i = 1; i <= N; i++) {
+        printf("  S%d: ", i);
+        scanf("%lf", &V[i]);
+    }
+
+    int current_state;
+    printf("\nスタートする状態を入力してください (例: 3): ");
+    scanf("%d", &current_state);
+
+    V[0] = 0.0;
+    V[N + 1] = 0.0;
+
+    printf("\n--- 移動ログ ---\n");
+    int steps = 0;
+    while (current_state != 0 && current_state != N + 1 && steps < 1000) {
+
+        double reward_left = (current_state - 1 == 0) ? 0.0 : 0.0;
+        double v_next_left = (current_state - 1 == 0) ? 0.0 : V[current_state - 1];
+        double q_left = reward_left + gamma * v_next_left;
+
+        double reward_right = (current_state + 1 == N + 1) ? 100.0 : 0.0;
+        double v_next_right = (current_state + 1 == N + 1) ? 0.0 : V[current_state + 1];
+        double q_right = reward_right + gamma * v_next_right;
+
+        int next_state = (q_left > q_right) ? current_state - 1 : current_state + 1;
+        double reward = (next_state == current_state - 1) ? reward_left : reward_right;
+        double v_next = (next_state == current_state - 1) ? v_next_left : v_next_right;
+
+        if (next_state == 0) {
+            printf("ステップ %d: S%d ➔ G1 (報酬: %.1f)\n", steps + 1, current_state, reward);
+        }
+        else if (next_state == N + 1) {
+            printf("ステップ %d: S%d ➔ G2 (報酬: %.1f)\n", steps + 1, current_state, reward);
+        }
+        else {
+            printf("ステップ %d: S%d ➔ S%d (報酬: %.1f)\n", steps + 1, current_state, next_state, reward);
+        }
+
+        V[current_state] = V[current_state] + alpha * (reward + gamma * v_next - V[current_state]);
+
+        current_state = next_state;
+        steps++;
+    }
+
+    printf("\n================ 答え ================\n");
+    printf("ゴール到達後の S1toS%d の状態価値関数:\n", N);
+    for (int i = 1; i <= N; i++) {
+        printf("%.4f%s", V[i], (i == N) ? "" : " ");
+    }
+    printf("\n======================================\n");
+}
+
 extern "C" void run_reinforcement_learning() {
     int mode;
-
     while (1) {
         printf("\n========================================\n");
         printf(" 解きたい問題の番号を選んでください\n");
-        printf("  1: TD学習（状態価値の更新）\n");
+        printf("  1: TD学習（指定ルートで状態価値更新）\n");
         printf("  2: Q学習 （行動価値の更新）\n");
         printf("  3: εグリーディ方策（移動確率の計算）\n");
+        printf("  4: TD学習（自動グリーディ移動・ゴールまで更新）\n");
         printf("  0: プログラムを終了する\n");
         printf("========================================\n");
         printf("選択: ");
 
-        if (scanf("%d", &mode) != 1) break;
+        if (scanf("%d", &mode) != 1) {
+            while (getchar() != '\n'); // 入力エラー時におかしくなるのを防ぐ
+            printf("数値を入力してください。\n");
+            continue;
+        }
 
         if (mode == 0) {
             printf("終了します。\n");
             break;
         }
-        else if (mode == 1) {
+
+        switch (mode) {
+        case 1:
             run_td_learning();
-        }
-        else if (mode == 2) {
+            break;
+        case 2:
             run_q_learning();
-        }
-        else if (mode == 3) {
+            break;
+        case 3:
             run_epsilon_greedy();
-        }
-        else {
+            break;
+        case 4:
+            run_greedy_td_simulation();
+            break;
+        default:
             printf("正しい番号を入力してください。\n");
+            break;
         }
     }
 }
