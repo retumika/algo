@@ -7,6 +7,7 @@
 static void run_td_learning() {
     double alpha, gamma;
     int N;
+    double reward_G1, reward_G2;
     double V[MAX_STATES + 2];
     int path_len;
     int path[1000];
@@ -23,6 +24,11 @@ static void run_td_learning() {
     scanf("%lf", &alpha);
     printf("割引率γを入力してください (例: 1.0で割引率なし): ");
     scanf("%lf", &gamma);
+
+    printf("G1(左端のゴール)に到達した時の報酬を入力してください (例: 0): ");
+    scanf("%lf", &reward_G1);
+    printf("G2(右端のゴール)に到達した時の報酬を入力してください (例: 100): ");
+    scanf("%lf", &reward_G2);
 
     printf("初期状態の価値を入力してください (S1 to S%d):\n", N);
     for (int i = 1; i <= N; i++) {
@@ -49,7 +55,12 @@ static void run_td_learning() {
         for (int i = 0; i < path_len - 1; i++) {
             int s = path[i];
             int s_next = path[i + 1];
-            double reward = (s_next == N + 1) ? 100.0 : 0.0;
+
+            // 移動先に応じて報酬を切り替え
+            double reward = 0.0;
+            if (s_next == 0) reward = reward_G1;
+            else if (s_next == N + 1) reward = reward_G2;
+
             V[s] = V[s] + alpha * (reward + gamma * V[s_next] - V[s]);
         }
     }
@@ -66,6 +77,7 @@ static void run_td_learning() {
 static void run_q_learning() {
     double alpha, gamma;
     int N;
+    double reward_G1, reward_G2;
     double Q[MAX_STATES + 2][2];
 
     printf("\n【2. Q学習モード】\n");
@@ -79,6 +91,11 @@ static void run_q_learning() {
     scanf("%lf", &alpha);
     printf("割引率γを入力してください (例: 0.9): ");
     scanf("%lf", &gamma);
+
+    printf("G1(左端のゴール)に到達した時の報酬を入力してください (例: 0): ");
+    scanf("%lf", &reward_G1);
+    printf("G2(右端のゴール)に到達した時の報酬を入力してください (例: 100): ");
+    scanf("%lf", &reward_G2);
 
     printf("初期の行動価値(Q値)を入力してください:\n");
     Q[0][0] = 0.0; Q[0][1] = 0.0;
@@ -114,7 +131,11 @@ static void run_q_learning() {
         }
 
         int next_state = (action == 0) ? target_state - 1 : target_state + 1;
-        double reward = (action == 1 && next_state == N + 1) ? 100.0 : 0.0;
+
+        // 移動先に応じて報酬を切り替え
+        double reward = 0.0;
+        if (next_state == 0) reward = reward_G1;
+        else if (next_state == N + 1) reward = reward_G2;
 
         double max_q_next = 0.0;
         if (next_state != 0 && next_state != N + 1) {
@@ -137,7 +158,11 @@ static void run_q_learning() {
         while (current_state != 0 && current_state != N + 1) {
             int action = (Q[current_state][0] > Q[current_state][1]) ? 0 : 1;
             int next_state = (action == 0) ? current_state - 1 : current_state + 1;
-            double reward = (action == 1 && next_state == N + 1) ? 100.0 : 0.0;
+
+            // 移動先に応じて報酬を切り替え
+            double reward = 0.0;
+            if (next_state == 0) reward = reward_G1;
+            else if (next_state == N + 1) reward = reward_G2;
 
             double max_q_next = 0.0;
             if (next_state != 0 && next_state != N + 1) {
@@ -186,7 +211,7 @@ static void run_epsilon_greedy() {
 
     printf("現在の状態価値を入力してください (S1 to S%d):\n", N);
     V[0] = 0.0;
-    V[N + 1] = 100.0;
+    V[N + 1] = 100.0; // ※確率は価値の大小で決まるため、ここの初期値は計算結果に影響しません
     for (int i = 1; i <= N; i++) {
         printf("  S%d: ", i);
         scanf("%lf", &V[i]);
@@ -222,6 +247,7 @@ static void run_epsilon_greedy() {
 static void run_greedy_td_simulation() {
     double alpha, gamma;
     int N;
+    double reward_G1, reward_G2;
     double V[MAX_STATES + 2];
 
     printf("\n【4. TD学習 自動グリーディ移動シミュレーション】\n");
@@ -232,6 +258,11 @@ static void run_greedy_td_simulation() {
     scanf("%lf", &alpha);
     printf("割引率γを入力してください (例: 0.9): ");
     scanf("%lf", &gamma);
+
+    printf("G1(左端のゴール)に到達した時の報酬を入力してください (例: 0): ");
+    scanf("%lf", &reward_G1);
+    printf("G2(右端のゴール)に到達した時の報酬を入力してください (例: 100): ");
+    scanf("%lf", &reward_G2);
 
     printf("現在の状態価値を入力してください (S1 to S%d):\n", N);
     for (int i = 1; i <= N; i++) {
@@ -250,11 +281,11 @@ static void run_greedy_td_simulation() {
     int steps = 0;
     while (current_state != 0 && current_state != N + 1 && steps < 1000) {
 
-        double reward_left = (current_state - 1 == 0) ? 0.0 : 0.0;
+        double reward_left = (current_state - 1 == 0) ? reward_G1 : 0.0;
         double v_next_left = (current_state - 1 == 0) ? 0.0 : V[current_state - 1];
         double q_left = reward_left + gamma * v_next_left;
 
-        double reward_right = (current_state + 1 == N + 1) ? 100.0 : 0.0;
+        double reward_right = (current_state + 1 == N + 1) ? reward_G2 : 0.0;
         double v_next_right = (current_state + 1 == N + 1) ? 0.0 : V[current_state + 1];
         double q_right = reward_right + gamma * v_next_right;
 
@@ -300,7 +331,7 @@ extern "C" void run_reinforcement_learning() {
         printf("選択: ");
 
         if (scanf("%d", &mode) != 1) {
-            while (getchar() != '\n'); // 入力エラー時におかしくなるのを防ぐ
+            while (getchar() != '\n');
             printf("数値を入力してください。\n");
             continue;
         }
